@@ -30,8 +30,6 @@ services:
     volumes:
       - .:/repo
       - doge-data:/data
-    ports:
-      - "18332:18332"
     command:
       - bash
       - -lc
@@ -43,7 +41,7 @@ services:
           libzmq5 \
           libboost-system1.74.0 libboost-filesystem1.74.0 libboost-chrono1.74.0 \
           libboost-program-options1.74.0 libboost-thread1.74.0 >/dev/null
-        exec /repo/src/dogecoind -regtest -datadir=/data -printtoconsole \
+        exec /repo/src/dogecoind -datadir=/data -printtoconsole \
           -server -rpcbind=0.0.0.0 -rpcallowip=0.0.0.0/0 \
           -rpcuser=base44 -rpcpassword=base44dev \
           -zmqpubrawblock=tcp://0.0.0.0:28332 \

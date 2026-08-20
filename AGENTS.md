@@ -43,7 +43,12 @@ curl -u base44:base44dev -X POST -H 'Content-Type: application/json' \
 ## Notes
 - Full build takes several minutes (large C++ codebase). Re-runs reconfigure + incremental
   `make`, fast once objects exist.
+- **Mainnet mode**: the node syncs the real Dogecoin blockchain. Initial sync takes
+  many hours and requires several GB of disk space. The node must be fully synced
+  before wallet transactions (send/receive) will work on mainnet.
 - Wallet support uses libdb5.3 (incompatible-bdb flag), not the legacy BDB 4.8.
 - Dogecoin Core has native ZMQ (not WebSocket) for notifications; the ws-bridge service
   bridges ZMQ → WebSocket so browsers/clients can receive real-time pushes.
+- RPC port is NOT published to the public internet (security: real funds at stake).
+  Use `docker compose exec node /repo/src/dogecoin-cli ...` to interact with the wallet.
 - No external credentials/secrets are needed — everything runs locally.
