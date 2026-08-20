@@ -59,13 +59,15 @@ services:
         condition: service_started
     volumes:
       - ./ws-bridge:/app
+      - ws-node-modules:/app/node_modules
     ports:
       - "3000:3000"
     environment:
       - ZMQ_ADDR=tcp://node:28332
       - WS_PORT=3000
-    command: sh -c "npm install --omit=dev && node server.js"
+    command: sh -c "npm ci --omit=dev && node server.js"
 
 volumes:
   apt-cache:
   doge-data:
+  ws-node-modules:

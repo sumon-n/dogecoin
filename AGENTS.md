@@ -13,10 +13,12 @@ The repo is the source tree; there is no prebuilt app image.
   - **node** (`ubuntu:22.04`): installs runtime libs (incl. `libzmq5`), runs
     `src/dogecoind -regtest` with RPC on 0.0.0.0. Depends on builder completing.
     ZMQ publishers enabled: `rawblock`, `rawtx`, `hashblock`, `hashtx` on `tcp://0.0.0.0:28332`.
-  - **ws-bridge** (`node:22-slim`): subscribes to the node's ZMQ socket and re-broadcasts
-    notifications as JSON over a WebSocket server on port 3000. Depends on node starting.
+  - **ws-bridge** (`node:22-slim`): serves a browser status page, subscribes to the node's
+    ZMQ socket, and re-broadcasts notifications as JSON over WebSocket on port 3000. Its
+    native dependencies use the `ws-node-modules` volume so host installs cannot shadow
+    the container-compatible modules. Depends on node starting.
 - Ports:
-  - **3000 → 3000** — WebSocket bridge (live block/tx notifications).
+  - **3000 → 3000** — browser status page and WebSocket bridge (live block/tx notifications).
   - **18332 → 18332** — JSON-RPC (regtest). Credentials: `base44` / `base44dev`.
 - ZMQ internal port `28332` (node ↔ bridge only, not published).
 
@@ -29,6 +31,8 @@ On each block/transaction the node publishes, clients receive:
 ## Verifying it works
 ```
 docker compose -f docker-compose.base44.yml ps
+# Browser status page
+curl -fsS http://localhost:3000/ | grep 'Dogecoin Core'
 # RPC
 curl -u base44:base44dev -X POST -H 'Content-Type: application/json' \
   --data '{"jsonrpc":"1.0","id":"t","method":"getblockchaininfo","params":[]}' \
