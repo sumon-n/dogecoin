@@ -1,0 +1,53 @@
+services:
+  builder:
+    image: ubuntu:22.04
+    working_dir: /repo
+    volumes:
+      - .:/repo
+      - apt-cache:/var/cache/apt
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        if [ -x /repo/src/dogecoind ]; then echo "dogecoind already built"; exit 0; fi
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y build-essential libtool autotools-dev automake pkg-config \
+          libssl-dev libevent-dev bsdmainutils libdb5.3++-dev \
+          libboost-system-dev libboost-filesystem-dev libboost-chrono-dev \
+          libboost-program-options-dev libboost-test-dev libboost-thread-dev
+        cd /repo
+        ./autogen.sh
+        ./configure --without-gui --disable-tests --disable-bench --with-incompatible-bdb
+        make -j"$(nproc)" -C src dogecoind dogecoin-cli
+
+  node:
+    image: ubuntu:22.04
+    working_dir: /repo
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+    volumes:
+      - .:/repo
+      - doge-data:/data
+    ports:
+      - "3000:18332"
+      - "18444:18444"
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq
+        apt-get install -y -qq libssl3 libevent-2.1-7 libevent-pthreads-2.1-7 libdb5.3++ \
+          libboost-system1.74.0 libboost-filesystem1.74.0 libboost-chrono1.74.0 \
+          libboost-program-options1.74.0 libboost-thread1.74.0 >/dev/null
+        exec /repo/src/dogecoind -regtest -datadir=/data -printtoconsole \
+          -server -rpcbind=0.0.0.0 -rpcallowip=0.0.0.0/0 \
+          -rpcuser=base44 -rpcpassword=base44dev
+
+volumes:
+  apt-cache:
+  doge-data:
