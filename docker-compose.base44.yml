@@ -10,11 +10,10 @@ services:
       - -lc
       - |
         set -e
-        if [ -x /repo/src/dogecoind ]; then echo "dogecoind already built"; exit 0; fi
         export DEBIAN_FRONTEND=noninteractive
         apt-get update
         apt-get install -y build-essential libtool autotools-dev automake pkg-config \
-          libssl-dev libevent-dev bsdmainutils libdb5.3++-dev \
+          libssl-dev libevent-dev bsdmainutils libdb5.3++-dev libzmq3-dev \
           libboost-system-dev libboost-filesystem-dev libboost-chrono-dev \
           libboost-program-options-dev libboost-test-dev libboost-thread-dev
         cd /repo
@@ -32,8 +31,7 @@ services:
       - .:/repo
       - doge-data:/data
     ports:
-      - "3000:18332"
-      - "18444:18444"
+      - "18332:18332"
     command:
       - bash
       - -lc
@@ -42,11 +40,31 @@ services:
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq
         apt-get install -y -qq libssl3 libevent-2.1-7 libevent-pthreads-2.1-7 libdb5.3++ \
+          libzmq5 \
           libboost-system1.74.0 libboost-filesystem1.74.0 libboost-chrono1.74.0 \
           libboost-program-options1.74.0 libboost-thread1.74.0 >/dev/null
         exec /repo/src/dogecoind -regtest -datadir=/data -printtoconsole \
           -server -rpcbind=0.0.0.0 -rpcallowip=0.0.0.0/0 \
-          -rpcuser=base44 -rpcpassword=base44dev
+          -rpcuser=base44 -rpcpassword=base44dev \
+          -zmqpubrawblock=tcp://0.0.0.0:28332 \
+          -zmqpubrawtx=tcp://0.0.0.0:28332 \
+          -zmqpubhashblock=tcp://0.0.0.0:28332 \
+          -zmqpubhashtx=tcp://0.0.0.0:28332
+
+  ws-bridge:
+    image: node:22-slim
+    working_dir: /app
+    depends_on:
+      node:
+        condition: service_started
+    volumes:
+      - ./ws-bridge:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - ZMQ_ADDR=tcp://node:28332
+      - WS_PORT=3000
+    command: sh -c "npm install --omit=dev && node server.js"
 
 volumes:
   apt-cache:
